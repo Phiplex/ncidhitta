@@ -201,6 +201,9 @@ void exit(), finish(), free(), reload(), ignore(), doPoll(), formatCID(),
      update_cidcall_log(), getINFO(), getField(), hexdump(), checkModem(),
      normalExit(), showConnected();
 
+/* LA Added function */
+void sendMsg();
+
 int getOptions(), doConf(), errorExit(), doAlias(), doTTY(), CheckForLockfile(),
     addPoll(), tcpOpen(), doModem(), initModem(), gettimeofday(), doPID(),
     tcpAccept(), openTTY();
@@ -1384,7 +1387,7 @@ int tcpOpen()
     return sd;
 }
 
-int  tcpAccept()
+int tcpAccept()
 {
     int sd;
     int ret;
@@ -1483,7 +1486,7 @@ void doPoll(int events)
 
     if (polld[pos].revents & POLLNVAL) /* Invalid Request */
     {
-    if (!noserial && polld[pos].fd == ttyfd)
+      if (!noserial && polld[pos].fd == ttyfd)
       {
         sprintf(buf, "%sInvalid Request from Serial device %d pos %d, Terminated  %s",
                 MSGLINE, polld[pos].fd, pos, strdate(WITHSEP));
@@ -2648,12 +2651,23 @@ void formatCID(char *buf)
                 strncpy(cidbuf, ptr + 4, BUFSIZ -1);
                 ptr = strchr(cidbuf, '.');
                 if (ptr) *ptr = 0;
+                /* LA: Start mod: Find Name using hitta.se & tidy Nmbr */
+                sprintf(msgbuf, "Begin: hittaAlias() [%s]\n", strdate(ONLYTIME));
+                logMsg(LEVEL4, msgbuf);
+                hittaAlias(cid.cidname, cidbuf);
+                sprintf(msgbuf, "End: hittaAlias() [%s]\n", strdate(ONLYTIME));
+                logMsg(LEVEL4, msgbuf);
+                cid.status |= CIDNAME;
+                /* LA: Stopp mod: Find Name using hitta.se */
                 builtinAlias(cid.cidnmbr, cidbuf);
-            }
+           }
             cid.status |= CIDNMBR;
         }
 
-        if ((ptr = strstr(buf, "NAME")))
+        /* LA: Start mod: Find Name using hitta.se */
+        /*     if ((ptr = strstr(buf, "NAME")))    */
+        if ((ptr = strstr(buf, "NAME")) && !(cid.status & CIDNAME))
+        /* LA: Stopp mod: Find Name using hitta.se */
         {
             if (*(ptr + 5) == '+') strncpy(cid.cidname, NONAME, CIDSIZE - 1);
             else
@@ -2824,6 +2838,14 @@ void formatCID(char *buf)
             if ((ptr = strchr(buf, '='))) ++ptr;
             else while (*ptr && !isblank((int) *ptr)) ++ptr; /* this should never happen */
             if (*ptr == ' ') ++ptr;
+            /* LA: Start mod: Find Name using hitta.se & tidy Nmbr */
+            sprintf(msgbuf, "Begin: hittaAlias() [%s]\n", strdate(ONLYTIME));
+            logMsg(LEVEL4, msgbuf);
+            hittaAlias(cid.cidname, ptr);
+            sprintf(msgbuf, "End: hittaAlias() [%s]\n", strdate(ONLYTIME));
+            logMsg(LEVEL4, msgbuf);
+            cid.status |= CIDNAME;
+            /* LA: Stopp mod: Find Name using hitta.se */
             builtinAlias(cid.cidnmbr, ptr);
             cid.status |= CIDNMBR;
             cidsent = 0;
@@ -2975,6 +2997,20 @@ void formatCID(char *buf)
          */
         writeClients(cidbuf);
 
+        /*
+         * LA: Inserted send to ZIR 
+         */
+        sprintf(cidbuf, "MSG: Samtal till %s från %s - %s & CIDLOW: %s %s\r\n",
+            cid.cidline,
+            cid.cidnmbr,
+            cid.cidname, 
+            cid.cidnmbr,
+            cid.cidname);
+        sendMsg(cidbuf);
+        /* 
+         * LA: End Inserted send to ZIR 
+         */ 
+        
         /*
          * Reset mesg, line, and status
          * Set sent indicator
@@ -3171,6 +3207,27 @@ void writeLog(char *logf, char *logbuf)
         ret = write(logfd, msgbuf, strlen(msgbuf));
         close(logfd);
     }
+}
+
+/*
+ * LA: Send MSG & APN message to ZIR.
+ */
+
+void sendMsg(char *message)
+{
+  struct sockaddr_in addr;
+  int sock = socket(AF_INET, SOCK_STREAM, 0);
+  if (sock) {
+    bzero(&addr, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = inet_addr("192.168.1.61");
+    addr.sin_port = htons(8090);
+
+    if (!connect(sock, (struct sockaddr *) &addr, sizeof(addr))) {
+      write(sock, message, strlen(message));
+      close(sock);
+    }
+  }
 }
 
 /*

@@ -1,5 +1,5 @@
 PROG        = ncidd
-SRC         = $(PROG).c nciddconf.c nciddalias.c nciddhangup.c poll.c
+SRC         = $(PROG).c nciddconf.c nciddalias.c nciddhangup.c poll.c nciddhitta.c
 DIST        = $(PROG).conf-in
 HEADER      = $(PROG).h nciddconf.h nciddalias.h nciddhangup.h poll.h
 ETCFILE     = ncidd.conf ncidd.alias ncidd.blacklist ncidd.whitelist
@@ -81,11 +81,11 @@ DEFINES      = -DCIDCONF=\"$(CONF)\" \
 MFLAGS       = -Wmissing-declarations -Wunused-variable -Wparentheses \
                -Wreturn-type -Wpointer-sign -Wformat #-Wunused-but-set-variable
 
-CFLAGS       = -O2 -I. -I.. $(DEFINES) $(MFLAGS) $(EXTRA_CFLAGS)
+CFLAGS       = -O2 -I. -I.. -I/usr/include/libxml2 -lxml2 -lcurl $(DEFINES) $(MFLAGS) $(EXTRA_CFLAGS)
 
 STRIP        = -s
 LDFLAGS      = $(STRIP)
-LDLIBS       =
+LDLIBS       = 
 
 usage:
 	@echo "to build a TiVo ppc binary for /var/hack: make tivo-s1"
