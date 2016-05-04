@@ -3,7 +3,8 @@ ncid (Network Caller Id) addon to fetch Name info (= NAME) from hitta.se based o
 
 (This is my first GitHub project trying to learn how to use GitHub - please forgive all my mistakes.)
 
-How to install to a Raspberry Pi:
+How to install on a Raspberry Pi:
+All commands run under root - if not add sudo
 
 apt-get update
 
