@@ -1,0 +1,5 @@
+gcc -o hitta `xml2-config --cflags` hitta.c nciddhitta.c `xml2-config --libs` -lcurl
+xml2-config --cflags => -I/usr/include/libxml2
+xml2-config --libs   => -lxml2
+
+gcc -o hitta -I/usr/include/libxml2 hitta.c nciddhitta.c -lxml2 -lcurl
